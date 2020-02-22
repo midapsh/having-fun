@@ -2,9 +2,7 @@ from bisect import bisect
 from heapq import nsmallest
 
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 from scipy.optimize import minimize
 
 ## Insights from:
@@ -20,26 +18,28 @@ def not_so_proper_divisors(n, propor=False):
         return [x for x in range(1, (n + 1) // 2 + 1) if n % x == 0 and n != x] + [n]
 
 def k_nearest(k, center, sorted_data):
-    "Return *k* members of *sorted_data* nearest to *center*"
-    # From: https://stackoverflow.com/questions/24112259/finding-k-closest-numbers-to-a-given-number
+    """Return *k* members of *sorted_data* nearest to *center*
+        From: https://stackoverflow.com/questions/24112259/finding-k-closest-numbers-to-a-given-number
+    """
+    
     i = bisect(sorted_data, center)
     segment = sorted_data[max(i-k, 0) : i+k]
     return nsmallest(k, segment, key=lambda x: abs(x - center))
 
-def func_prob(n, p, total=1_000):
+def func_prob(n, p, total):
     return (1-(1-p)**n)*total + total/n
 
-def del_n_func_prob(n, p, total=1_000):
+def del_n_func_prob(n, p, total):
     return -total/n**2 - total*(1 - p)**n*np.log(1 - p)
 
-def explained_func_minimize(fun, x0, p, jac, bounds, all_ns):
+def explained_func_minimize(fun, x0, p, total, jac, bounds, all_ns):
     """Here we have the functiion that minimizes:
         func: function that is supposed to get minemized
         x0: initial value
         args: args passed to the function. In this one, we pass p for each "curve" (class)
         jac: the jacobian of this function
-        bounds: we delimit by n=1 beacuse its minimum value and n=1_000 because
-            its the total "population".
+        bounds: we delimit by n=1 beacuse its minimum value and n=total because
+            its the '''total population'''.
         all_ns: to have a equal prob ina a group, it has to be a propor divisor.
             So, now we have to search in a custom domain (all_ns), to find the minimum
         Returns a tuple with a n_min list and z_min list
@@ -47,17 +47,14 @@ def explained_func_minimize(fun, x0, p, jac, bounds, all_ns):
     list_n_sol_int = []
     list_z_sol_int = []
     for cur_p in p:
-        res = minimize(fun=fun, x0=x0, args=(cur_p), jac=jac, bounds=bounds) 
+        res = minimize(fun=fun, x0=x0, args=(cur_p, total), jac=jac, bounds=bounds) 
         n_sol = res.x[0]
         ## Solution value
         # z_sol = res.fun[0]
         n_sol_int_floor, n_sol_int_ceil = sorted(k_nearest(2, n_sol, all_ns))
-        ## If n dont need to be a equal group
-        # n_sol_int_floor = np.floor(n_sol)
-        # n_sol_int_ceil = np.ceil(n_sol)
         ## Getting its z value
-        z_sol_for_n_int_floor = np.ceil(func_prob(n_sol_int_floor, cur_p))
-        z_sol_for_n_int_ceil = np.ceil(func_prob(n_sol_int_ceil, cur_p))
+        z_sol_for_n_int_floor = np.ceil(func_prob(n_sol_int_floor, cur_p, total))
+        z_sol_for_n_int_ceil = np.ceil(func_prob(n_sol_int_ceil, cur_p, total))
         if z_sol_for_n_int_floor < z_sol_for_n_int_ceil:
             list_n_sol_int.append(n_sol_int_floor)
             list_z_sol_int.append(z_sol_for_n_int_floor)
@@ -67,20 +64,20 @@ def explained_func_minimize(fun, x0, p, jac, bounds, all_ns):
     return (list_n_sol_int, list_z_sol_int,)
 
 ### Numbers
-n = np.array(not_so_proper_divisors(100)) # sorted list
+total = 1_000
+### Getting proper_divisor near 100
+near_100 = k_nearest(1, 100, not_so_proper_divisors(total))[0]
+
+n = np.array(not_so_proper_divisors(near_100)) # sorted list
 p = np.linspace(0.01, 0.3, 100)
 nn, pp = np.meshgrid(n, p, sparse=False)
-z = func_prob(nn,pp)
+z = func_prob(nn,pp, total)
 z_int = np.ceil(z)
-# df = pd.DataFrame(data=np.array([nn.flatten(), pp.flatten(), z_int.flatten()]).T, columns = ["n", "prob", "result"])
-# df = pd.DataFrame(data=np.array([nn.flatten(), pp.flatten(), z_int.flatten()]).T, columns = ["n", "prob", "result"])
 
 n0 = 2
-n_min, z_min = explained_func_minimize(fun=func_prob, x0=n0, p=p, jac=del_n_func_prob, bounds=[(1, 1_000,),], all_ns=n)
-# del_n_df = pd.DataFrame(data=np.array([n_min, p, z_min]).T, columns = ["n_min", "prob", "result_min"]) # ["n", "prob", "result"]
+n_min, z_min = explained_func_minimize(fun=func_prob, x0=n0, p=p, total=total, jac=del_n_func_prob, bounds=[(1, total,),], all_ns=n)
 
 ### Plots
-# fig = (px.line_3d(df, x="n", y="prob", z="result", color="prob", title="The Poisoned Drinks Problem", ))
 def func_fig(n, cur_p, z):
     a = go.Scatter3d(
         x=n, y=cur_p, z=z,
@@ -107,9 +104,6 @@ fig2 = go.Scatter3d(
     name="Minimum value",
     showlegend=True
 )
-# fig.add_trace(px.line_3d(del_n_df, x="n", y="prob", z="result"))
-# fig = (px.line_3d(del_n_df, x="n", y="prob", z="result"))
-# fig.add_trace(px.line_3d(del_n_df, x="n_min", y="prob", z="result_min"))
 
 _ = fig.add_trace(fig2)
 
