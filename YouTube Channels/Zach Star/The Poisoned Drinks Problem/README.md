@@ -44,9 +44,11 @@ Use the following command line:
 ### Beautiful image \*-\*
 
 Here we have a beautiful minimum:
+
 ![alt text](./common/images/plot1.png "First visualization")
 
 Look how cool! We've got two minimums here:
+
 Optimization minimum             |  Minimum found by inspection
 :-------------------------:|:-------------------------:
 ![alt text](./common/images/minimum1.png "Optimization minimum")  |  ![alt text](./common/images/minimum2.png "Minimum found by inspection")
