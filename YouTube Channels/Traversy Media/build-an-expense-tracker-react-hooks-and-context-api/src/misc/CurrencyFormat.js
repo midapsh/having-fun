@@ -14,12 +14,10 @@ const RE_NOTNUMBER = /\D/g;
 export function formatCurrency(locale, currency, value) {
     let num = Math.sign(value) * parseInt(value.replace(RE_NOTNUMBER, ""), 10) / 100;
     let str = "";
-    console.log(num);
 
     if (!isNaN(num)) {
         str = num.toLocaleString(locale, { "style": "currency", "currency": currency });
     }
-    console.log(str);
 
     return str;
 }
