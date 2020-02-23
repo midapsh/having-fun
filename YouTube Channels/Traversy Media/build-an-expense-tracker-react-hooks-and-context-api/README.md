@@ -17,4 +17,4 @@ In this project we will take a vanilla JS expense tracker app and turn it into a
 
 Here we have a beautiful Expense Tracker App:
 
-![alt text](./common/images/final_app.png "Expense Tracker App")
+![alt text](./common/images/final_app_new_image.png "Expense Tracker App")
